@@ -1,0 +1,2 @@
+class DatumMissingException(Exception):
+    pass

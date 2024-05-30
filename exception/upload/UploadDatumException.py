@@ -1,0 +1,2 @@
+class UploadDatumException(Exception):
+    pass
