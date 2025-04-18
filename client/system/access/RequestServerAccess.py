@@ -11,7 +11,7 @@ from exception.UnknownException import UnknownException
 
 
 class RequestServerAccess(AbstractServerAccess):
-    baseurl: str = "https://emilejones.top:20001/api/"
+    baseurl: str = "https://emilejones.top:3103/api/"
     # baseurl: str = "http://192.168.0.3:20001"
 
     def get_need_upload_inspect_infos(self, limit: int, upload_status: list[UploadStatus], token: str) -> list[

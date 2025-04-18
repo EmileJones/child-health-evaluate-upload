@@ -194,7 +194,9 @@ class SimulationInputer:
             abnormal_textarea.clear()
             output_content = None
             if sph_r is None or cyl_r is None or sph_l is None or cyl_l is None:
-                output_content = '数据不足'
+                # Modify
+                # output_content = '数据不足'
+                output_content = ''
             else:
                 output_format = 'R:{:+.2f}DS/{:+.2f}DC×{:d}\nL:{:+.2f}DS/{:+.2f}DC×{:d}'
                 output_content = output_format.format(sph_r, cyl_r, axis_r, sph_l, cyl_l, axis_l)

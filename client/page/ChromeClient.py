@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 import math
 
 from selenium.common import TimeoutException
@@ -15,6 +15,47 @@ from time import sleep
 from selenium import webdriver
 
 from client.page.AbstractClient import AbstractClient
+
+
+def extract_birthdate_from_id(id_number):
+    """
+    从身份证号码中提取出生日期并返回datetime格式的日期对象
+
+    参数:
+        id_number (str): 身份证号码（15位或18位）
+
+    返回:
+        datetime: 出生日期的datetime对象
+
+    异常:
+        ValueError: 如果身份证号码长度不正确或包含非数字字符
+    """
+    # 去除可能存在的空格
+    id_number = id_number.strip()
+
+    # 验证身份证长度（15位或18位）
+    if len(id_number) not in (15, 18):
+        raise ValueError("身份证号码长度不正确，应为15位或18位")
+
+    # 验证身份证是否只包含数字（18位身份证最后一位可能是X）
+    if not (id_number[:-1].isdigit() and (id_number[-1].isdigit() or id_number[-1].upper() == 'X')):
+        raise ValueError("身份证号码包含非法字符")
+
+    # 提取出生日期部分
+    if len(id_number) == 15:
+        # 15位身份证：7-12位是出生日期（YYMMDD）
+        birth_date_str = '19' + id_number[6:12]
+    else:
+        # 18位身份证：7-14位是出生日期（YYYYMMDD）
+        birth_date_str = id_number[6:14]
+
+    # 将字符串转换为datetime对象
+    try:
+        birth_date = datetime.strptime(birth_date_str, '%Y%m%d')
+    except ValueError as e:
+        raise ValueError("身份证中的出生日期无效") from e
+
+    return birth_date.replace(year=datetime.now().year)
 
 
 class ChromeClient(AbstractClient):
@@ -171,9 +212,10 @@ class ChromeClient(AbstractClient):
                                   is_reupload)
         # 输入处理意见
         self.__inputer.input_clyj(info.age, info.other, info.hb_assess)
-        # 输入下次随访日期
-        self.__inputer.input_next_inspect_time(info.inspect_time)
+        # 输入下次随访日期 Modify
+        self.__inputer.input_next_inspect_time(extract_birthdate_from_id(info.identity))
         # 随访医生签名
         self.__inputer.input_signature()
         # 保存
         self.__inputer.save()
+
