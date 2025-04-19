@@ -212,8 +212,8 @@ class ChromeClient(AbstractClient):
                                   is_reupload)
         # 输入处理意见
         self.__inputer.input_clyj(info.age, info.other, info.hb_assess)
-        # 输入下次随访日期 Modify
-        self.__inputer.input_next_inspect_time(extract_birthdate_from_id(info.identity))
+        # 输入下次随访日期
+        self.__inputer.input_next_inspect_time(extract_birthdate_from_id(info.identity), info.age)
         # 随访医生签名
         self.__inputer.input_signature()
         # 保存

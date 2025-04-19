@@ -1,5 +1,6 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 
+from dateutil.relativedelta import relativedelta
 from selenium.webdriver import ActionChains
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
@@ -64,8 +65,8 @@ class SimulationInputer:
         # 判断身份证是否正确
         self.__check_dialog_and_raise_exception()
         # 等待系统查出儿童数据
-        WebDriverWait(self.__driver, 5).until(expected_conditions.presence_of_element_located((By.XPATH, '//*[@id="noaftername"]')))
-
+        WebDriverWait(self.__driver, 5).until(
+            expected_conditions.presence_of_element_located((By.XPATH, '//*[@id="noaftername"]')))
 
     def input_inspect_time(self, inspect_time: datetime):
         if inspect_time is None:
@@ -194,7 +195,6 @@ class SimulationInputer:
             abnormal_textarea.clear()
             output_content = None
             if sph_r is None or cyl_r is None or sph_l is None or cyl_l is None:
-                # Modify
                 # output_content = '数据不足'
                 output_content = ''
             else:
@@ -358,25 +358,24 @@ class SimulationInputer:
          .perform())
         self.__check_dialog_and_raise_exception()
 
-    def input_next_inspect_time(self, inspect_time: datetime | None):
+    def input_next_inspect_time(self, birth_day: datetime | None, age: int | None):
         """
-            下次寻访时间为一年后
-            :param inspect_time 这次的寻访时间
+            下次随访时间为：录入年龄的下一个年龄的生日
+            :param birth_day 孩子的生日
+            :param age 录入的年龄
         """
-
-        if inspect_time is None:
+        if birth_day is None:
             raise DatumMissingException("缺少体检日期数据")
-        # 到明年的时间差
-        delta = None
-        if inspect_time.year % 4 == 0 and inspect_time.month < 3 and inspect_time.day < 29:
-            delta = timedelta(days=366)
-        else:
-            delta = timedelta(days=365)
+        if age is None:
+            raise DatumMissingException("缺少录入年龄数据")
 
         next_inspect_time_input = self.__driver.find_element(By.XPATH, '//*[@id="followup_date2"]')
+
+        next_inspect_time: datetime = birth_day + relativedelta(years=age + 1)
+
         (ActionChains(self.__driver)
          .move_to_element(next_inspect_time_input).click()
-         .send_keys((inspect_time + delta).strftime("%Y%m%d"))
+         .send_keys(next_inspect_time.strftime("%Y%m%d"))
          .perform())
         self.__check_dialog_and_raise_exception()
 
