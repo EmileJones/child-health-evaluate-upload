@@ -32,17 +32,15 @@ def upload_child(info: InspectInfo, page_client: AbstractClient) -> UploadStatus
         page_client.upload_child(info)
         return UploadStatus.succeed(info.info_id)
     except InspectInfoIsAlreadyUploaded as e:
-        # 计算到当年8/31的年龄
+        # 检查出生日月是否在体检日期和8月31日之间
         birthday: datetime = datetime.strptime(info.identity[6:14], "%Y%m%d")
-        end_time: datetime = datetime(info.inspect_time.year, 8, 31)
-        new_age = calculate_age(birthday, end_time)
-        if math.floor(new_age / 12) <= math.floor(info.age / 12):
-            # 如果没有大一岁
+        if birthday.month <= info.inspect_time.month or birthday.month > 8 or birthday.day <= info.inspect_time.day:
+            # 如果出生日月不在体检日期和8月31日之间，则不上传到下一年
             logger.info(str(e))
             return UploadStatus.was_uploaded(info.info_id)
         else:
-            # 如果大了一岁
-            info.age = new_age
+            # 如果出生日月在体检日期和8月31日之间，则上传到下一年
+            info.age = info.age + 1
             logger.info("尝试提升一岁")
             try:
                 # 下一个年龄段上传成功
@@ -53,6 +51,7 @@ def upload_child(info: InspectInfo, page_client: AbstractClient) -> UploadStatus
                 logger.info(str(e))
                 return UploadStatus.was_uploaded(info.info_id)
             except UploadDatumException as ee:
+                # 数据不足
                 logger.info(str(ee))
                 return UploadStatus.failure(info.info_id, str(ee))
             except Exception as ee:
