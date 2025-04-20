@@ -1,4 +1,6 @@
 from datetime import datetime
+from math import floor
+from time import sleep
 
 from dateutil.relativedelta import relativedelta
 from selenium.webdriver import ActionChains
@@ -62,11 +64,15 @@ class SimulationInputer:
          .move_to_element(title_h1).click()
          .perform())
 
+        sleep(2)
         # 判断身份证是否正确
         self.__check_dialog_and_raise_exception()
+
         # 等待系统查出儿童数据
         WebDriverWait(self.__driver, 5).until(
             expected_conditions.presence_of_element_located((By.XPATH, '//*[@id="noaftername"]')))
+
+
 
     def input_inspect_time(self, inspect_time: datetime):
         if inspect_time is None:
@@ -362,7 +368,7 @@ class SimulationInputer:
         """
             下次随访时间为：录入年龄的下一个年龄的生日
             :param birth_day 孩子的生日
-            :param age 录入的年龄
+            :param age 录入的年龄（月）
         """
         if birth_day is None:
             raise DatumMissingException("缺少体检日期数据")
@@ -370,14 +376,16 @@ class SimulationInputer:
             raise DatumMissingException("缺少录入年龄数据")
 
         next_inspect_time_input = self.__driver.find_element(By.XPATH, '//*[@id="followup_date2"]')
-
-        next_inspect_time: datetime = birth_day + relativedelta(years=age + 1)
+        age_year: int = floor(age / 12) + 1
+        next_inspect_time: datetime = birth_day + relativedelta(years=age_year)
 
         (ActionChains(self.__driver)
          .move_to_element(next_inspect_time_input).click()
          .send_keys(next_inspect_time.strftime("%Y%m%d"))
          .perform())
         self.__check_dialog_and_raise_exception()
+
+        print("下次随访日期:" + str(next_inspect_time))
 
     def input_signature(self):
         """

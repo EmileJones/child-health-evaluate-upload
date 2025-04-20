@@ -40,7 +40,7 @@ def upload_child(info: InspectInfo, page_client: AbstractClient) -> UploadStatus
             return UploadStatus.was_uploaded(info.info_id)
         else:
             # 如果出生日月在体检日期和8月31日之间，则上传到下一年
-            info.age = info.age + 1
+            info.age = info.age + 12
             logger.info("尝试提升一岁")
             try:
                 # 下一个年龄段上传成功
@@ -88,6 +88,8 @@ if __name__ == '__main__':
     success_num = 0
     exception_num = 0
     no_archive_num = 0
+    already_upload_num = 0
+
     try:
         system_client.login_system()
         page_client = ChromeClient()
@@ -110,6 +112,9 @@ if __name__ == '__main__':
                 elif upload_result.status == 2:
                     # 成功
                     success_num = success_num + 1
+                elif upload_result.status == 3:
+                    # 成功
+                    already_upload_num = already_upload_num + 1
 
             # 获取下一个需要上传的儿童数据
             inspect_infos = system_client.get_need_upload_inspect_infos(LIMIT, upload_status)
@@ -124,6 +129,7 @@ if __name__ == '__main__':
         logger.info("程序结束")
         logger.info("录入数据总人数：" + str(total_num))
         logger.info("成功人数：" + str(success_num))
+        logger.info("已经录入人数：" + str(already_upload_num))
         logger.info("发生异常人数：" + str(exception_num))
         logger.info("没有建档人数：" + str(no_archive_num))
         time.sleep(1000)

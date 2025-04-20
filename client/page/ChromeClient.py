@@ -55,7 +55,7 @@ def extract_birthdate_from_id(id_number):
     except ValueError as e:
         raise ValueError("身份证中的出生日期无效") from e
 
-    return birth_date.replace(year=datetime.now().year)
+    return birth_date
 
 
 class ChromeClient(AbstractClient):
@@ -149,7 +149,7 @@ class ChromeClient(AbstractClient):
         # 输入中医药健康管理服务
         self.__inputer.input_chinese_medicine_service()
         # 输入下次随访日期
-        self.__inputer.input_next_inspect_time(info.inspect_time)
+        self.__inputer.input_next_inspect_time(extract_birthdate_from_id(info.identity), info.age)
         # 随访医生签名
         self.__inputer.input_signature()
         # 保存
