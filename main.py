@@ -34,7 +34,7 @@ def upload_child(info: InspectInfo, page_client: AbstractClient) -> UploadStatus
     except InspectInfoIsAlreadyUploaded as e:
         # 检查出生日月是否在体检日期和8月31日之间
         birthday: datetime = datetime.strptime(info.identity[6:14], "%Y%m%d")
-        if birthday.month <= info.inspect_time.month or birthday.month > 8 or birthday.day <= info.inspect_time.day:
+        if birthday.month < info.inspect_time.month or birthday.month == info.inspect_time.month and birthday.day <= info.inspect_time.day or birthday.month > 8:
             # 如果出生日月不在体检日期和8月31日之间，则不上传到下一年
             logger.info(str(e))
             return UploadStatus.was_uploaded(info.info_id)
