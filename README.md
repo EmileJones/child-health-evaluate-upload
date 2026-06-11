@@ -35,19 +35,19 @@
 ### 1. 安装依赖
 在项目根目录下运行：
 ```bash
-pip install -r requirements.txt
+uv sync
 ```
 
 ### 2. 配置后台地址
-本脚本默认连接的后台地址位于 `client/system/access/RequestServerAccess.py` 中：
+本脚本默认连接的后台地址位于根目录 `config.py` 中：
 ```python
-baseurl: str = "https://emilejones.top:3103/api/"
+SERVER_BASE_URL = "https://emilejones.top:3103/api/"
 ```
-如需连接本地或其他服务器，请修改此处的 `baseurl`。
+如需连接本地或其他服务器，请修改此处的 `SERVER_BASE_URL`。
 
 ### 3. 运行程序
 ```bash
-python main.py
+uv run python main.py
 ```
 
 ### 4. 使用流程

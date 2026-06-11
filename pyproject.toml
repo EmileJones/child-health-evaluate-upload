@@ -1,0 +1,14 @@
+[project]
+name = "child-health-evaluate-upload"
+version = "0.1.0"
+description = "Automation script for uploading child health evaluation data."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "python-dateutil==2.9.0.post0",
+    "requests==2.32.3",
+    "selenium==4.31.0",
+]
+
+[tool.uv]
+package = false

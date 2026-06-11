@@ -1,14 +1,21 @@
 import abc
 
+from config import (
+    CREATE_NEW_PERSONAL_ARCHIVE_URL,
+    FOUR_TO_SIX_CHILD_UPLOAD_URL,
+    HOME_PAGE_URL,
+    SIGN_IN_PAGE_URL,
+    THREE_YEARS_OLD_UPLOAD_URL,
+)
 from entity.InspectInfo import InspectInfo
 
 
 class AbstractClient(abc.ABC):
-    SIGN_IN_PAGE_URL = 'https://ws71.shousuan.com/www/index.php'
-    HOME_PAGE_URL = 'https://ws71.shousuan.com/www/data.php'
-    THREE_YEARS_OLD_UPLOAD_URL = 'https://ws71.shousuan.com/www/children3.php'
-    FOUR_TO_SIX_CHILD_UPLOAD_URL = 'https://ws71.shousuan.com/www/children4_6.php'
-    CREATE_NEW_PERSONAL_ARCHIVE = "https://ws71.shousuan.com/www/personal.php?url=1"
+    SIGN_IN_PAGE_URL = SIGN_IN_PAGE_URL
+    HOME_PAGE_URL = HOME_PAGE_URL
+    THREE_YEARS_OLD_UPLOAD_URL = THREE_YEARS_OLD_UPLOAD_URL
+    FOUR_TO_SIX_CHILD_UPLOAD_URL = FOUR_TO_SIX_CHILD_UPLOAD_URL
+    CREATE_NEW_PERSONAL_ARCHIVE = CREATE_NEW_PERSONAL_ARCHIVE_URL
 
     @abc.abstractmethod
     def switch_sign_page(self) -> None:

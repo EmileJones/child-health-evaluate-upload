@@ -3,6 +3,7 @@ from datetime import datetime
 
 import requests
 
+from config import SERVER_BASE_URL
 from client.system.access.AbstractServerAccess import AbstractServerAccess
 from entity.InspectInfo import InspectInfo
 from entity.UploadStatus import UploadStatus
@@ -11,8 +12,7 @@ from exception.UnknownException import UnknownException
 
 
 class RequestServerAccess(AbstractServerAccess):
-    baseurl: str = "https://emilejones.top:3103/api/"
-    # baseurl: str = "http://192.168.0.3:20001"
+    baseurl: str = SERVER_BASE_URL
 
     def get_need_upload_inspect_infos(self, limit: int, upload_status: list[UploadStatus], token: str) -> list[
         InspectInfo]:
