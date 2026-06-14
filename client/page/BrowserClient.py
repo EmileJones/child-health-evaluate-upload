@@ -1,5 +1,4 @@
 from datetime import datetime
-import math
 
 from selenium.common import TimeoutException
 from selenium.webdriver import ActionChains
@@ -60,7 +59,7 @@ def extract_birthdate_from_id(id_number):
 
 class ChromeClient(AbstractClient):
     def __init__(self):
-        self.__driver = webdriver.Chrome()
+        self.__driver = webdriver.Edge()
         self.__driver.minimize_window()
         self.__inputer: SimulationInputer = SimulationInputer(self.__driver)
 

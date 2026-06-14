@@ -3,7 +3,7 @@ import traceback
 from datetime import datetime
 
 from client.page.AbstractClient import AbstractClient
-from client.page.ChromeClient import ChromeClient
+from client.page.BrowserClient import ChromeClient
 from client.system.SystemClient import SystemClient
 from client.system.access.RequestServerAccess import RequestServerAccess
 from entity.InspectInfo import InspectInfo
