@@ -30,10 +30,10 @@ class SimulationInputer:
         """
         dialog_table = self.__driver.find_element(By.XPATH, '//*[@id="dialog"]')
         if dialog_table.is_displayed():
-            alert_message_td = self.__driver.find_element(By.XPATH, '//*[@id="dlg_info"]')
+            alert_message_td = self.__driver.find_element(By.XPATH, '/html/body/table/tbody/tr[2]/td/table/tbody/tr/td[2]')
             if '成功' in alert_message_td.text or "正在保存信息" in alert_message_td.text:
                 return
-            if '该儿童已做过记录' in alert_message_td.text:
+            if '已做过记录' in alert_message_td.text:
                 raise InspectInfoIsAlreadyUploaded('该儿童已做过记录')
             if '找不到个人信息' in alert_message_td.text:
                 raise ChildInfoIsNotExist('找不到个人信息')
@@ -69,10 +69,8 @@ class SimulationInputer:
         self.__check_dialog_and_raise_exception()
 
         # 等待系统查出儿童数据
-        WebDriverWait(self.__driver, 5).until(
+        WebDriverWait(self.__driver, 3).until(
             expected_conditions.presence_of_element_located((By.XPATH, '//*[@id="noaftername"]')))
-
-
 
     def input_inspect_time(self, inspect_time: datetime):
         if inspect_time is None:
@@ -204,7 +202,7 @@ class SimulationInputer:
                 # output_content = '数据不足'
                 output_content = ''
             else:
-                output_format = 'R:{:+.2f}DS/{:+.2f}DC×{:d}\nL:{:+.2f}DS/{:+.2f}DC×{:d}'
+                output_format = 'R:{:+.2f}DS/{:+.2f}DC×{:d}AX\nL:{:+.2f}DS/{:+.2f}DC×{:d}AX'
                 output_content = output_format.format(sph_r, cyl_r, axis_r, sph_l, cyl_l, axis_l)
             ActionChains(self.__driver).move_to_element(abnormal_textarea).click().send_keys(output_content).perform()
         self.__check_dialog_and_raise_exception()
@@ -470,29 +468,24 @@ class SimulationInputer:
 
     def input_development_assess(self, age: int, spirit: list[str] | None):
         """
-            只要心理有内容就选1,其他选无
+            发育评估，默认正常
         """
-        ul = None
+        li = None
         if age >= 72:
-            ul = self.__driver.find_element(By.XPATH,
-                                            '/html/body/div/div[1]/div[2]/div/div/form/table[2]/tbody/tr[16]/td[2]/span/ul[3]')
+
+            li = self.__driver.find_element(By.XPATH,
+                                            '/html/body/div/div[1]/div[2]/div/div[1]/form/table[2]/tbody/tr[16]/td[2]/span/section[4]/ul/li[1]')
         elif age >= 60:
-
-            ul = self.__driver.find_element(By.XPATH,
-                                            '/html/body/div/div[1]/div[2]/div/div/form/table[2]/tbody/tr[16]/td[2]/span/ul[2]')
+            li = self.__driver.find_element(By.XPATH,
+                                            '/html/body/div/div[1]/div[2]/div/div[1]/form/table[2]/tbody/tr[16]/td[2]/span/section[3]/ul/li[1]')
         elif age >= 48:
-            ul = self.__driver.find_element(By.XPATH,
-                                            '/html/body/div/div[1]/div[2]/div/div/form/table[2]/tbody/tr[16]/td[2]/span/ul[1]')
+            li = self.__driver.find_element(By.XPATH,
+                                            '/html/body/div/div[1]/div[2]/div/div[1]/form/table[2]/tbody/tr[16]/td[2]/span/section[2]/ul/li[1]')
         else:
-            ul = self.__driver.find_element(By.XPATH,
-                                            '/html/body/div/div[1]/div[2]/div/div/form/table[2]/tbody/tr[16]/td[2]/span/ul[1]')
+            li = self.__driver.find_element(By.XPATH,
+                                            '/html/body/div/div[1]/div[2]/div/div[1]/form/table[2]/tbody/tr[15]/td[2]/span/ul/li[1]')
 
-        if spirit is None or len(spirit) == 0:
-            li = ul.find_elements(By.TAG_NAME, 'li')[0]
-            ActionChains(self.__driver).move_to_element(li).click().perform()
-        else:
-            li = ul.find_elements(By.TAG_NAME, 'li')[1]
-            ActionChains(self.__driver).move_to_element(li).click().perform()
+        ActionChains(self.__driver).move_to_element(li).click().perform()
 
     def input_clyj(self, age: int, other: list[str] | None, hb_assess: str | None):
         """
