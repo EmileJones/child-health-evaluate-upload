@@ -19,6 +19,7 @@ from exception.upload.UploadDatumException import UploadDatumException
 class SimulationInputer:
     def __init__(self, w: WebDriver):
         self.__driver = w
+        self.__invalid_data_dialog_showed = False
 
     def __check_dialog_and_raise_exception(self):
         """
@@ -28,16 +29,25 @@ class SimulationInputer:
             如果内容存在 '找不到个人信息',则抛出ChildInfoIsNotExist
             如果没有以上情况,则抛出UploadDatumException
         """
-        dialog_table = self.__driver.find_element(By.XPATH, '//*[@id="dialog"]')
-        if dialog_table.is_displayed():
-            alert_message_td = self.__driver.find_element(By.XPATH, '/html/body/table/tbody/tr[2]/td/table/tbody/tr/td[2]')
-            if '成功' in alert_message_td.text or "正在保存信息" in alert_message_td.text:
-                return
-            if '已做过记录' in alert_message_td.text:
-                raise InspectInfoIsAlreadyUploaded('该儿童已做过记录')
-            if '找不到个人信息' in alert_message_td.text:
-                raise ChildInfoIsNotExist('找不到个人信息')
-            raise UploadDatumException(alert_message_td.text)
+        dialog_table = self.__driver.find_element(By.XPATH, '/html/body/table')
+        alert_message_td = self.__driver.find_element(By.XPATH, '/html/body/table/tbody/tr[2]/td/table/tbody/tr/td[2]')
+        message = alert_message_td.text
+        # 保存成功或者没有异常则继续
+        if message is None or message == '' or '成功' in message or "正在保存信息" in message:
+            return
+        # 提示弹窗，直接忽视
+        if self.__invalid_data_dialog_showed is False and "不符合随访日期要求" in message:
+            self.__invalid_data_dialog_showed = True
+            ok_button = self.__driver.find_element(By.XPATH, "/html/body/table/tbody/tr[3]/td/button[1]")
+            ok_button.click()
+            sleep(1)
+            return
+        # 有异常则终止
+        if '已做过记录' in message:
+            raise InspectInfoIsAlreadyUploaded('该儿童已做过记录')
+        if '找不到个人信息' in message:
+            raise ChildInfoIsNotExist('找不到个人信息')
+        raise UploadDatumException(message)
 
     def input_age(self, age_of_month: int):
         if age_of_month >= 72:
@@ -90,22 +100,22 @@ class SimulationInputer:
             raise DatumMissingException("缺少体重数据")
 
         weight_input = self.__driver.find_element(By.XPATH, '//*[@id="weight"]')
-        ActionChains(self.__driver).move_to_element(weight_input).click().send_keys(str(weight)).perform()
+        weight_input.send_keys(str(weight))
+
+        li = None
         if weight_assess == '中':
-            li = self.__driver.find_element(By.XPATH, '//*[@id="weight2"]/li[3]')
-            ActionChains(self.__driver).move_to_element(li).click().perform()
+            li = self.__driver.find_element(By.XPATH, '//*[@id="weight2"]/li[4]')
         elif weight_assess == '中上':
             li = self.__driver.find_element(By.XPATH, '//*[@id="weight2"]/li[2]')
-            ActionChains(self.__driver).move_to_element(li).click().perform()
         elif weight_assess == '中下':
-            li = self.__driver.find_element(By.XPATH, '//*[@id="weight2"]/li[4]')
-            ActionChains(self.__driver).move_to_element(li).click().perform()
+            li = self.__driver.find_element(By.XPATH, '//*[@id="weight2"]/li[6]')
         elif weight_assess == '上' or weight_assess == '超上':
             li = self.__driver.find_element(By.XPATH, '//*[@id="weight2"]/li[1]')
-            ActionChains(self.__driver).move_to_element(li).click().perform()
         elif weight_assess == '低体重' or weight_assess == '重度低体重':
-            li = self.__driver.find_element(By.XPATH, '//*[@id="weight2"]/li[5]')
-            ActionChains(self.__driver).move_to_element(li).click().perform()
+            li = self.__driver.find_element(By.XPATH, '//*[@id="weight2"]/li[7]')
+        else:
+            raise UploadDatumException("体重没有完成评价")
+        li.click()
         self.__check_dialog_and_raise_exception()
 
     def input_height(self, height: float, height_assess: str):
@@ -113,37 +123,39 @@ class SimulationInputer:
             raise DatumMissingException("缺少身高数据")
 
         height_input = self.__driver.find_element(By.XPATH, '//*[@id="height"]')
-        ActionChains(self.__driver).move_to_element(height_input).click().send_keys(str(height)).perform()
+        height_input.send_keys(str(height))
+
+        li = None
         if height_assess == '中':
-            li = self.__driver.find_element(By.XPATH, '//*[@id="height2"]/li[3]')
-            ActionChains(self.__driver).move_to_element(li).click().perform()
+            li = self.__driver.find_element(By.XPATH, '//*[@id="height2"]/li[4]')
         elif height_assess == '中上':
             li = self.__driver.find_element(By.XPATH, '//*[@id="height2"]/li[2]')
-            ActionChains(self.__driver).move_to_element(li).click().perform()
         elif height_assess == '中下':
-            li = self.__driver.find_element(By.XPATH, '//*[@id="height2"]/li[4]')
-            ActionChains(self.__driver).move_to_element(li).click().perform()
+            li = self.__driver.find_element(By.XPATH, '//*[@id="height2"]/li[6]')
         elif height_assess == '上' or height_assess == '超上':
             li = self.__driver.find_element(By.XPATH, '//*[@id="height2"]/li[1]')
-            ActionChains(self.__driver).move_to_element(li).click().perform()
         elif height_assess == '生长迟缓' or height_assess == '重度生长迟缓':
-            li = self.__driver.find_element(By.XPATH, '//*[@id="height2"]/li[5]')
-            ActionChains(self.__driver).move_to_element(li).click().perform()
+            li = self.__driver.find_element(By.XPATH, '//*[@id="height2"]/li[7]')
+        else:
+            raise UploadDatumException("身高没有完成评价")
+        li.click()
         self.__check_dialog_and_raise_exception()
 
     def input_bmi(self, bmi_assess: str):
         if bmi_assess is None:
             raise DatumMissingException("缺少bmi数据")
 
+        hw_li = None
         if bmi_assess == '中' or bmi_assess == '超重' or bmi_assess == '中下':
             hw_li = self.__driver.find_element(By.XPATH, '//*[@id="wheight2"]/li[2]')
-            ActionChains(self.__driver).move_to_element(hw_li).click().perform()
         elif bmi_assess == '肥胖' or bmi_assess == '重度肥胖':
             hw_li = self.__driver.find_element(By.XPATH, '//*[@id="wheight2"]/li[1]')
-            ActionChains(self.__driver).move_to_element(hw_li).click().perform()
         elif bmi_assess == '消瘦' or bmi_assess == '重度消瘦':
             hw_li = self.__driver.find_element(By.XPATH, '//*[@id="wheight2"]/li[3]')
-            ActionChains(self.__driver).move_to_element(hw_li).click().perform()
+        else:
+            raise UploadDatumException("bmi没有完成评价")
+        hw_li.click()
+
         self.__check_dialog_and_raise_exception()
 
     def input_assess(self, bmi_assess: str, height_assess: str, weight_assess: str):
@@ -203,7 +215,12 @@ class SimulationInputer:
                 output_content = ''
             else:
                 output_format = 'R:{:+.2f}DS/{:+.2f}DC×{:d}AX\nL:{:+.2f}DS/{:+.2f}DC×{:d}AX'
-                output_content = output_format.format(sph_r, cyl_r, axis_r, sph_l, cyl_l, axis_l)
+                output_content = output_format.format(sph_r,
+                                                      cyl_r,
+                                                      axis_r if axis_r is not None else 0,
+                                                      sph_l,
+                                                      cyl_l,
+                                                      axis_l if axis_l is not None else 0)
             ActionChains(self.__driver).move_to_element(abnormal_textarea).click().send_keys(output_content).perform()
         self.__check_dialog_and_raise_exception()
 
@@ -472,7 +489,6 @@ class SimulationInputer:
         """
         li = None
         if age >= 72:
-
             li = self.__driver.find_element(By.XPATH,
                                             '/html/body/div/div[1]/div[2]/div/div[1]/form/table[2]/tbody/tr[16]/td[2]/span/section[4]/ul/li[1]')
         elif age >= 60:
@@ -485,7 +501,7 @@ class SimulationInputer:
             li = self.__driver.find_element(By.XPATH,
                                             '/html/body/div/div[1]/div[2]/div/div[1]/form/table[2]/tbody/tr[15]/td[2]/span/ul/li[1]')
 
-        ActionChains(self.__driver).move_to_element(li).click().perform()
+        li.click()
 
     def input_clyj(self, age: int, other: list[str] | None, hb_assess: str | None):
         """
