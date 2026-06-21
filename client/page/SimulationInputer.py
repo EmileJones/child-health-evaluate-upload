@@ -3,6 +3,7 @@ from math import floor
 from time import sleep
 
 from dateutil.relativedelta import relativedelta
+from selenium.common import TimeoutException
 from selenium.webdriver import ActionChains
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
@@ -21,6 +22,20 @@ class SimulationInputer:
         self.__driver = w
         self.__invalid_data_dialog_showed = False
 
+    def __dismiss_dialog(self):
+        try:
+            ok_button = self.__driver.find_element(By.XPATH, "/html/body/table/tbody/tr[3]/td/button[1]")
+            ok_button.click()
+        except Exception:
+            pass
+
+        try:
+            WebDriverWait(self.__driver, 2).until(
+                expected_conditions.invisibility_of_element_located((By.ID, "modal"))
+            )
+        except TimeoutException:
+            pass
+
     def __check_dialog_and_raise_exception(self):
         """
             如果弹出提示框，有'成功'二字或者'正在保存信息'则什么都不做
@@ -29,24 +44,26 @@ class SimulationInputer:
             如果内容存在 '找不到个人信息',则抛出ChildInfoIsNotExist
             如果没有以上情况,则抛出UploadDatumException
         """
-        dialog_table = self.__driver.find_element(By.XPATH, '/html/body/table')
         alert_message_td = self.__driver.find_element(By.XPATH, '/html/body/table/tbody/tr[2]/td/table/tbody/tr/td[2]')
         message = alert_message_td.text
         # 保存成功或者没有异常则继续
         if message is None or message == '' or '成功' in message or "正在保存信息" in message:
             return
         # 提示弹窗，直接忽视
-        if self.__invalid_data_dialog_showed is False and "不符合随访日期要求" in message:
-            self.__invalid_data_dialog_showed = True
-            ok_button = self.__driver.find_element(By.XPATH, "/html/body/table/tbody/tr[3]/td/button[1]")
-            ok_button.click()
-            sleep(1)
+        if "不符合随访日期要求" in message:
+            if not self.__invalid_data_dialog_showed:
+                self.__invalid_data_dialog_showed = True
+                sleep(1)
+                self.__dismiss_dialog()
             return
         # 有异常则终止
         if '已做过记录' in message:
+            self.__dismiss_dialog()
             raise InspectInfoIsAlreadyUploaded('该儿童已做过记录')
         if '找不到个人信息' in message:
+            self.__dismiss_dialog()
             raise ChildInfoIsNotExist('找不到个人信息')
+        self.__dismiss_dialog()
         raise UploadDatumException(message)
 
     def input_age(self, age_of_month: int):
@@ -66,7 +83,8 @@ class SimulationInputer:
     def input_identity(self, identity: str):
         if identity is None:
             raise DatumMissingException("缺少身份证数据")
-
+        
+        self.__invalid_data_dialog_showed = False
         title_h1 = self.__driver.find_element(By.XPATH, '//*[@id="A4"]/h1')
         id_input = self.__driver.find_element(By.ID, 'no')
         (ActionChains(self.__driver)
@@ -93,10 +111,11 @@ class SimulationInputer:
          .move_to_element(title_h1).click()
          .perform())
         # 判断日期是否正确
+        sleep(1)
         self.__check_dialog_and_raise_exception()
 
     def input_weight(self, weight: float, weight_assess: str):
-        if weight_assess is None or weight_assess is None:
+        if weight is None or weight_assess is None:
             raise DatumMissingException("缺少体重数据")
 
         weight_input = self.__driver.find_element(By.XPATH, '//*[@id="weight"]')
@@ -114,12 +133,12 @@ class SimulationInputer:
         elif weight_assess == '低体重' or weight_assess == '重度低体重':
             li = self.__driver.find_element(By.XPATH, '//*[@id="weight2"]/li[7]')
         else:
-            raise UploadDatumException("体重没有完成评价")
+            raise DatumMissingException("体重评价不符合规范")
         li.click()
         self.__check_dialog_and_raise_exception()
 
     def input_height(self, height: float, height_assess: str):
-        if height_assess is None or height_assess is None:
+        if height is None or height_assess is None:
             raise DatumMissingException("缺少身高数据")
 
         height_input = self.__driver.find_element(By.XPATH, '//*[@id="height"]')
@@ -137,7 +156,7 @@ class SimulationInputer:
         elif height_assess == '生长迟缓' or height_assess == '重度生长迟缓':
             li = self.__driver.find_element(By.XPATH, '//*[@id="height2"]/li[7]')
         else:
-            raise UploadDatumException("身高没有完成评价")
+            raise DatumMissingException("身高评价不符合规范")
         li.click()
         self.__check_dialog_and_raise_exception()
 
@@ -432,6 +451,7 @@ class SimulationInputer:
             select_button = self.__driver.find_element(By.XPATH, '//*[@id="A4"]/form/table[2]/tbody/tr[20]/td[1]/input')
             ActionChains(self.__driver).move_to_element(select_button).click().pause(0.05).perform()
 
+        sleep(0.5)
         # 切换到iframe
         select_iframe = self.__driver.find_element(By.XPATH, '//*[@id="popup"]')
         self.__driver.switch_to.frame(select_iframe)
@@ -441,44 +461,40 @@ class SimulationInputer:
                 bmi_assess is not None and ("肥胖" in bmi_assess or "超重" in bmi_assess or "消瘦" in bmi_assess)):
             first_checkbox = self.__driver.find_element(By.XPATH, '//*[@id="zd1"]')
             second_checkbox = self.__driver.find_element(By.XPATH, '//*[@id="zd2"]')
-            (ActionChains(self.__driver)
-             .move_to_element(first_checkbox).click()
-             .move_to_element(second_checkbox).click()
-             .perform())
+            first_checkbox.click()
+            second_checkbox.click()
 
         # 所有人都选第六个
         sixth_checkbox = self.__driver.find_element(By.XPATH, '//*[@id="zd6"]')
-        ActionChains(self.__driver).move_to_element(sixth_checkbox).click().perform()
+        sixth_checkbox.click()
 
         # 视力有问题的选第七个
         if eyesight_assess is not None and eyesight_assess != "zc":
             seventh_checkbox = self.__driver.find_element(By.XPATH, '//*[@id="zd7"]')
-            ActionChains(self.__driver).move_to_element(seventh_checkbox).click().perform()
+            seventh_checkbox.click()
 
         # 根据年龄选对应的
         if is_reupload:
             age = age - 12
 
+        age_checkbox = None
         if age >= 72:
-            checkbox = self.__driver.find_element(By.XPATH, '//*[@id="zd19"]')
-            ActionChains(self.__driver).move_to_element(checkbox).click().perform()
+            age_checkbox = self.__driver.find_element(By.XPATH, '//*[@id="zd19"]')
         elif age >= 60:
-            checkbox = self.__driver.find_element(By.XPATH, '//*[@id="zd18"]')
-            ActionChains(self.__driver).move_to_element(checkbox).click().perform()
+            age_checkbox = self.__driver.find_element(By.XPATH, '//*[@id="zd18"]')
         elif age >= 48:
-            checkbox = self.__driver.find_element(By.XPATH, '//*[@id="zd17"]')
-            ActionChains(self.__driver).move_to_element(checkbox).click().perform()
+            age_checkbox = self.__driver.find_element(By.XPATH, '//*[@id="zd17"]')
         elif age >= 36:
-            checkbox = self.__driver.find_element(By.XPATH, '//*[@id="zd16"]')
-            ActionChains(self.__driver).move_to_element(checkbox).click().perform()
+            age_checkbox = self.__driver.find_element(By.XPATH, '//*[@id="zd16"]')
         else:
             raise UnknownException('低于三岁')
 
+        age_checkbox.click()
         ActionChains(self.__driver).scroll_by_amount(0, 200).perform()
 
         # 确认
         ensure_button = self.__driver.find_element(By.XPATH, '//*[@id="dialog"]/tbody/tr[3]/td/button[1]')
-        ActionChains(self.__driver).move_to_element(ensure_button).click().perform()
+        ensure_button.click()
         # 退出iframe
         self.__driver.switch_to.default_content()
         self.__check_dialog_and_raise_exception()
